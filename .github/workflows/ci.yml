@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check background.js
+          node --check content.js
+          node --check mru.js
+          node --check offscreen.js
+          node --check popup.js
+      - name: Validate JSON
+        run: node -e 'for (const file of ["manifest.json", "karabiner/archeo.json"]) JSON.parse(require("fs").readFileSync(file, "utf8"))'
+      - name: Run tests
+        run: node tests/mru.test.js

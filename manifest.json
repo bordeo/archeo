@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Archeo",
+  "description": "A few of Arc's small, useful interactions for Chrome.",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "permissions": [
+    "activeTab",
+    "clipboardWrite",
+    "favicon",
+    "offscreen",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Archeo",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "copy-link": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
+      },
+      "description": "Copy the current page link"
+    },
+    "switch-recent-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Period",
+        "mac": "MacCtrl+Shift+Period"
+      },
+      "description": "Switch through tabs by most recent use"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

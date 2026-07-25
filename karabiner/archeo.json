@@ -1,0 +1,91 @@
+{
+  "title": "Archeo shortcuts for Google Chrome",
+  "rules": [
+    {
+      "description": "Archeo: Arc-style shortcuts in Chrome",
+      "manipulators": [
+        {
+          "type": "basic",
+          "description": "Shift-Command-C copies the current Chrome URL with Archeo",
+          "from": {
+            "key_code": "c",
+            "modifiers": {
+              "mandatory": ["command", "shift"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "x",
+              "modifiers": ["left_command", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Control-Tab cycles through most-recent Chrome tabs with Archeo",
+          "from": {
+            "key_code": "tab",
+            "modifiers": {
+              "mandatory": ["control"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "period",
+              "modifiers": ["left_control", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Command-Option-C keeps Chrome's element inspector available",
+          "from": {
+            "key_code": "c",
+            "modifiers": {
+              "mandatory": ["command", "option"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "c",
+              "modifiers": ["left_command", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

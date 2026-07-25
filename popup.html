@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Archeo</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <header>
+      <div class="mark">A</div>
+      <div><h1>Archeo</h1><p>Small Arc comforts for Chrome.</p></div>
+    </header>
+    <main>
+      <button data-command="copy-link">
+        <span><strong>Copy link</strong><small>Copies the current page URL</small></span>
+        <kbd data-shortcut="copy-link">⇧⌘X</kbd>
+      </button>
+      <button data-command="switch-recent-tab">
+        <span><strong>Recent tabs</strong><small>Repeat to move back in history</small></span>
+        <kbd data-shortcut="switch-recent-tab">⌃⇧.</kbd>
+      </button>
+    </main>
+    <p class="note">Chrome reserves ⇧⌘C and ⌃Tab. Archeo cannot suppress those browser actions, so it uses the shortcuts shown above.</p>
+    <a id="shortcuts" href="#">Open shortcut settings</a>
+    <script src="popup.js"></script>
+  </body>
+</html>
