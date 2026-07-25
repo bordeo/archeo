@@ -270,6 +270,9 @@ async function runCommand(command, options = {}) {
   try {
     if (command === "copy-link") await copyCurrentLink();
     if (command === "switch-recent-tab") await switchToRecentTab(options);
+    if (command === "commit-recent-tab") {
+      await commitRecentTab(switchSession?.sourceTabId);
+    }
   } catch (error) {
     console.error(`[Archeo] ${command} failed`, error);
     showBadge("Error", "#b3261e");

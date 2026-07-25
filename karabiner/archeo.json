@@ -33,6 +33,94 @@
         },
         {
           "type": "basic",
+          "description": "Left Control release finishes an active Archeo tab selection",
+          "from": {
+            "key_code": "left_control",
+            "modifiers": {
+              "optional": ["any"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "left_control"
+            }
+          ],
+          "to_after_key_up": [
+            {
+              "key_code": "comma",
+              "modifiers": ["left_control", "left_shift"],
+              "conditions": [
+                {
+                  "type": "variable_if",
+                  "name": "archeo_switching",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 0
+              }
+            }
+          ],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Right Control release finishes an active Archeo tab selection",
+          "from": {
+            "key_code": "right_control",
+            "modifiers": {
+              "optional": ["any"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "right_control"
+            }
+          ],
+          "to_after_key_up": [
+            {
+              "key_code": "comma",
+              "modifiers": ["left_control", "left_shift"],
+              "conditions": [
+                {
+                  "type": "variable_if",
+                  "name": "archeo_switching",
+                  "value": 1
+                }
+              ]
+            },
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 0
+              }
+            }
+          ],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
           "description": "Control-Tab cycles through most-recent Chrome tabs with Archeo",
           "from": {
             "key_code": "tab",
@@ -42,6 +130,12 @@
             }
           },
           "to": [
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 1
+              }
+            },
             {
               "key_code": "period",
               "modifiers": ["left_control", "left_shift"]

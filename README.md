@@ -18,6 +18,7 @@ Archeo is a Manifest V3 extension with no build step, external dependencies, ana
 5. Open `chrome://extensions/shortcuts` and confirm the internal shortcuts:
    - Copy Link: `Shift+Command+X`
    - Recent Tabs: `Control+Shift+.`
+   - Finish Recent Tabs: `Control+Shift+,`
 
 Chrome reserves `Shift+Command+C` for DevTools and `Control+Tab` for native tab navigation. Extensions cannot override those shortcuts directly, so macOS users can install the included Karabiner-Elements configuration to get the intended gestures.
 
@@ -39,6 +40,8 @@ cp karabiner/archeo.json ~/.config/karabiner/assets/complex_modifications/archeo
 Then open **Karabiner-Elements → Complex Modifications → Add predefined rule** and enable **Archeo: Arc-style shortcuts in Chrome**.
 
 The mappings apply only to Google Chrome, Chrome Beta/Dev/Canary, and Chromium. Reload Archeo from `chrome://extensions` after changing its files.
+
+The configuration also sends Archeo's private Finish Recent Tabs shortcut when Control is released. This makes closing and committing the selector reliable even when a page intercepts the browser's Control key-up event.
 
 ## How Recent Tabs works
 

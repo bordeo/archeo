@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Archeo",
   "description": "A few of Arc's small, useful interactions for Chrome.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
@@ -35,6 +35,13 @@
         "mac": "MacCtrl+Shift+Period"
       },
       "description": "Switch through tabs by most recent use"
+    },
+    "commit-recent-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Comma",
+        "mac": "MacCtrl+Shift+Comma"
+      },
+      "description": "Finish the recent-tab selection"
     }
   },
   "content_scripts": [

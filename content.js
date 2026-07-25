@@ -292,8 +292,8 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message?.type === "ARCHEO_TOAST") showToast(message.text);
 });
 
-document.addEventListener("keyup", (event) => {
-  if (switcherActive && event.key === "Control") {
+window.addEventListener("keyup", (event) => {
+  if (switcherActive && (event.key === "Control" || !event.ctrlKey)) {
     switcherActive = false;
     chrome.runtime.sendMessage({ type: "COMMIT_SWITCHER" });
   }
