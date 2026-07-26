@@ -26,3 +26,7 @@ jobs:
         run: node -e 'for (const file of ["manifest.json", "karabiner/archeo.json"]) JSON.parse(require("fs").readFileSync(file, "utf8"))'
       - name: Run tests
         run: node tests/mru.test.js
+      - name: Install Lua
+        run: sudo apt-get install -y lua5.4
+      - name: Test Hammerspoon adapter
+        run: lua5.4 tests/hammerspoon.test.lua hammerspoon/archeo.lua
