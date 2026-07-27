@@ -48,20 +48,7 @@
           "to_after_key_up": [
             {
               "key_code": "comma",
-              "modifiers": ["left_control", "left_shift"],
-              "conditions": [
-                {
-                  "type": "variable_if",
-                  "name": "archeo_switching",
-                  "value": 1
-                }
-              ]
-            },
-            {
-              "set_variable": {
-                "name": "archeo_switching",
-                "value": 0
-              }
+              "modifiers": ["left_control", "left_shift"]
             }
           ],
           "conditions": [
@@ -92,20 +79,7 @@
           "to_after_key_up": [
             {
               "key_code": "comma",
-              "modifiers": ["left_control", "left_shift"],
-              "conditions": [
-                {
-                  "type": "variable_if",
-                  "name": "archeo_switching",
-                  "value": 1
-                }
-              ]
-            },
-            {
-              "set_variable": {
-                "name": "archeo_switching",
-                "value": 0
-              }
+              "modifiers": ["left_control", "left_shift"]
             }
           ],
           "conditions": [
@@ -130,12 +104,6 @@
             }
           },
           "to": [
-            {
-              "set_variable": {
-                "name": "archeo_switching",
-                "value": 1
-              }
-            },
             {
               "key_code": "u",
               "modifiers": ["left_control", "left_shift"]
@@ -163,12 +131,6 @@
             }
           },
           "to": [
-            {
-              "set_variable": {
-                "name": "archeo_switching",
-                "value": 1
-              }
-            },
             {
               "key_code": "period",
               "modifiers": ["left_control", "left_shift"]

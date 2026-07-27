@@ -19,13 +19,18 @@ jobs:
         run: |
           node --check background.js
           node --check content.js
+          node --check grouping.js
+          node --check key-observer.js
           node --check mru.js
           node --check offscreen.js
           node --check popup.js
       - name: Validate JSON
         run: node -e 'for (const file of ["manifest.json", "karabiner/archeo.json"]) JSON.parse(require("fs").readFileSync(file, "utf8"))'
       - name: Run tests
-        run: node tests/mru.test.js
+        run: |
+          node tests/mru.test.js
+          node tests/grouping.test.js
+          node tests/key-observer.test.js
       - name: Install Lua
         run: sudo apt-get install -y lua5.4
       - name: Test Hammerspoon adapter

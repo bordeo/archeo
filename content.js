@@ -6,6 +6,8 @@ const host = document.createElement("div");
 host.id = "archeo-root";
 const root = host.attachShadow({ mode: "closed" });
 let switcherActive = false;
+const CONTROL_RELEASE_EVENT = "__archeo_control_released__";
+const { groupAdjacentItems } = globalThis.ArcheoGrouping;
 
 const style = document.createElement("style");
 style.textContent = `
@@ -18,7 +20,7 @@ style.textContent = `
     transform: translateX(-50%) translateY(12px) scale(.98);
     display: flex;
     gap: 8px;
-    max-width: min(1010px, calc(100vw - 36px));
+    max-width: min(1100px, calc(100vw - 36px));
     padding: 10px;
     overflow: hidden;
     color: #f6f4f0;
@@ -33,13 +35,59 @@ style.textContent = `
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .switcher.visible { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  .group-cluster {
+    --group-color: #9aa0a6;
+    position: relative;
+    display: flex;
+    gap: 8px;
+    min-width: 0;
+    border-radius: 12px;
+    outline: 1px solid color-mix(in srgb, var(--group-color) 68%, transparent);
+    background: color-mix(in srgb, var(--group-color) 8%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--group-color) 9%, transparent);
+  }
+  .group-label {
+    position: absolute;
+    z-index: 2;
+    top: -7px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    max-width: calc(100% - 16px);
+    height: 16px;
+    padding: 0 6px;
+    overflow: hidden;
+    color: rgba(255, 255, 255, .88);
+    background: #373533;
+    border: 1px solid color-mix(in srgb, var(--group-color) 45%, #373533);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .group-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--group-color);
+  }
+  .group-label span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .tab {
     box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) 24px;
     gap: 8px;
+    flex: 1 1 188px;
     width: 188px;
     min-width: 0;
+    height: 154px;
     padding: 8px;
     border: 2px solid transparent;
     border-radius: 12px;
@@ -56,7 +104,8 @@ style.textContent = `
   .preview {
     position: relative;
     width: 100%;
-    aspect-ratio: 16 / 10;
+    height: 100%;
+    min-height: 0;
     overflow: hidden;
     border-radius: 8px;
     background: linear-gradient(145deg, #4b4845, #2e2c2a);
@@ -72,16 +121,39 @@ style.textContent = `
   .preview-fallback {
     display: grid;
     place-items: center;
+    isolation: isolate;
+    position: relative;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.11), transparent 55%);
+    background: #403d3a;
+  }
+  .preview-fallback::after {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: rgba(24, 23, 22, .34);
+    content: "";
+  }
+  .preview-backdrop {
+    position: absolute;
+    z-index: -2;
+    inset: -35%;
+    width: 170%;
+    height: 170%;
+    object-fit: cover;
+    opacity: .42;
+    filter: blur(25px) saturate(1.6);
+    transform: scale(1.12);
   }
   .preview-fallback .favicon,
   .preview-fallback .fallback {
-    width: 42px;
-    height: 42px;
-    border-radius: 11px;
-    font-size: 20px;
+    position: relative;
+    z-index: 1;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    font-size: 15px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .24);
   }
   .tab-label {
     display: grid;
@@ -89,7 +161,8 @@ style.textContent = `
     align-items: center;
     gap: 8px;
     min-width: 0;
-    padding: 0 3px 2px;
+    height: 24px;
+    padding: 0 3px;
   }
   .favicon {
     width: 20px;
@@ -166,6 +239,12 @@ function hideSwitcher() {
   root.querySelector(".switcher")?.classList.remove("visible");
 }
 
+function commitSwitcher() {
+  if (!switcherActive) return;
+  switcherActive = false;
+  chrome.runtime.sendMessage({ type: "COMMIT_SWITCHER" });
+}
+
 function renderSwitcher(items) {
   mount();
   const firstAppearance = !switcherActive;
@@ -178,18 +257,27 @@ function renderSwitcher(items) {
     root.append(switcher);
   }
 
-  const currentIds = [...switcher.children].map((card) => card.dataset.tabId);
+  const currentCards = [...switcher.querySelectorAll(".tab[data-tab-id]")];
+  const currentIds = currentCards.map((card) => card.dataset.tabId);
   const nextIds = items.map((item) => String(item.id));
+  const layoutSignature = JSON.stringify(items.map((item) => [
+    item.id,
+    item.groupId,
+    item.groupTitle,
+    item.groupColor
+  ]));
   const sameCards =
+    switcher.dataset.layoutSignature === layoutSignature &&
     currentIds.length === nextIds.length &&
     currentIds.every((id, index) => id === nextIds[index]);
 
   if (sameCards) {
-    for (const [index, card] of [...switcher.children].entries()) {
+    for (const [index, card] of currentCards.entries()) {
       card.classList.toggle("selected", Boolean(items[index]?.selected));
     }
   } else {
-    switcher.replaceChildren(...items.map(createTabCard));
+    switcher.replaceChildren(...groupAdjacentItems(items).map(createSegment));
+    switcher.dataset.layoutSignature = layoutSignature;
   }
 
   if (firstAppearance) {
@@ -198,6 +286,45 @@ function renderSwitcher(items) {
       if (switcherActive) switcher.classList.add("visible");
     });
   }
+}
+
+const GROUP_COLORS = {
+  grey: "#9aa0a6",
+  blue: "#5b9cf6",
+  red: "#ef6b73",
+  yellow: "#e7b84b",
+  green: "#54b978",
+  pink: "#df75b6",
+  purple: "#a985e8",
+  cyan: "#4dbbc8",
+  orange: "#e99050"
+};
+
+function createSegment(segment) {
+  if (segment.groupId === null) return createTabCard(segment.items[0]);
+
+  const cluster = document.createElement("div");
+  cluster.className = "group-cluster";
+  cluster.style.setProperty(
+    "--group-color",
+    GROUP_COLORS[segment.groupColor] || GROUP_COLORS.grey
+  );
+  cluster.style.flexGrow = String(segment.items.length);
+  cluster.style.flexBasis = `calc(${segment.items.length} * 188px + ${
+    Math.max(0, segment.items.length - 1) * 8
+  }px)`;
+
+  const label = document.createElement("div");
+  label.className = "group-label";
+
+  const dot = document.createElement("span");
+  dot.className = "group-dot";
+
+  const title = document.createElement("span");
+  title.textContent = segment.groupTitle;
+  label.append(dot, title);
+  cluster.append(label, ...segment.items.map(createTabCard));
+  return cluster;
 }
 
 function createTabCard(item) {
@@ -247,7 +374,16 @@ function makeFavicon(item) {
 function makePreviewFallback(item) {
   const fallback = document.createElement("div");
   fallback.className = "preview-fallback";
-  fallback.append(makeFavicon(item));
+  const icon = makeFavicon(item);
+
+  if (icon.classList.contains("favicon")) {
+    const backdrop = icon.cloneNode();
+    backdrop.className = "preview-backdrop";
+    backdrop.addEventListener("error", () => backdrop.remove());
+    fallback.append(backdrop);
+  }
+
+  fallback.append(icon);
   return fallback;
 }
 
@@ -294,10 +430,11 @@ chrome.runtime.onMessage.addListener((message) => {
 
 window.addEventListener("keyup", (event) => {
   if (switcherActive && (event.key === "Control" || !event.ctrlKey)) {
-    switcherActive = false;
-    chrome.runtime.sendMessage({ type: "COMMIT_SWITCHER" });
+    commitSwitcher();
   }
 }, true);
+
+window.addEventListener(CONTROL_RELEASE_EVENT, commitSwitcher, true);
 
 document.addEventListener("keydown", (event) => {
   if (switcherActive && event.key === "Escape") {
@@ -309,8 +446,6 @@ document.addEventListener("keydown", (event) => {
 }, true);
 
 window.addEventListener("blur", () => {
-  if (!switcherActive) return;
-  switcherActive = false;
-  chrome.runtime.sendMessage({ type: "COMMIT_SWITCHER" });
+  commitSwitcher();
 });
 })();

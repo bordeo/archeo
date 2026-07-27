@@ -3,7 +3,7 @@
 Archeo brings a couple of Arc-inspired interactions to Google Chrome:
 
 - **Copy Link** copies the active page URL and shows a compact confirmation pill.
-- **Recent Tabs** opens a visual most-recently-used tab switcher. Keep holding Control and tap Tab to move forward or Shift+Tab to move backward; release Control to switch, or press Escape to cancel.
+- **Recent Tabs** opens a visual most-recently-used tab switcher. Keep holding Control and tap Tab to move forward or Shift+Tab to move backward; release Control to switch, or press Escape to cancel. Adjacent tabs from the same Chrome tab group share a subtle wrapper with the group's name and color.
 
 Archeo is a Manifest V3 extension with no build step, external dependencies, analytics, or network services.
 
@@ -85,7 +85,7 @@ Other tools can integrate with Archeo without an extension-specific API. Scope t
 1. `Shift+Command+C` sends `Shift+Command+X` for **Copy Link**.
 2. Every `Control+Tab` key-down sends `Control+Shift+.` for **Recent Tabs**.
 3. Every `Control+Shift+Tab` key-down sends `Control+Shift+U` for **Recent Tabs Backward**.
-4. After at least one cycle command, releasing Control sends `Control+Shift+,` once to **Finish Recent Tabs**.
+4. Releasing Control sends `Control+Shift+,` once to **Finish Recent Tabs**. The command is harmless when no selector is active.
 
 The third step is essential: a normal hotkey-only tool can trigger Copy Link and cycle the selection, but it cannot reliably finish the held-key interaction. BetterTouchTool exposes a key-release action category and is a good candidate for a future preset; contributions for tested adapters are welcome.
 

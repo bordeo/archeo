@@ -171,6 +171,7 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
   );
   const targetId = switchSession.order[switchSession.index];
   const tabs = await chrome.tabs.query({ windowId: switchSession.windowId });
+  const groupsById = await getGroupsById(switchSession.windowId);
   const tabsById = new Map(tabs.map((tab) => [tab.id, tab]));
   const orderedTabs = switchSession.order
     .map((id) => tabsById.get(id))
@@ -183,13 +184,19 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
   );
   const visibleItems = orderedTabs
     .slice(start, start + SWITCHER_LIMIT)
-    .map((tab) => ({
-      id: tab.id,
-      title: tab.title || "New tab",
-      faviconUrl: safeFaviconUrl(tab.url, tab.favIconUrl),
-      thumbnailUrl: thumbnailsByTab[String(tab.id)] || "",
-      selected: tab.id === targetId
-    }));
+    .map((tab) => {
+      const group = groupsById.get(tab.groupId);
+      return {
+        id: tab.id,
+        title: tab.title || "New tab",
+        faviconUrl: safeFaviconUrl(tab.url, tab.favIconUrl),
+        thumbnailUrl: thumbnailsByTab[String(tab.id)] || "",
+        selected: tab.id === targetId,
+        groupId: group?.id ?? -1,
+        groupTitle: group?.title || "",
+        groupColor: group?.color || "grey"
+      };
+    });
 
   const switcherShown = await sendToTab(switchSession.sourceTabId, {
     type: "ARCHEO_SWITCHER",
@@ -205,6 +212,15 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
   switchFailsafeTimer = setTimeout(() => {
     commitRecentTab(switchSession?.sourceTabId).catch(console.error);
   }, SWITCH_FAILSAFE_MS);
+}
+
+async function getGroupsById(windowId) {
+  try {
+    const groups = await chrome.tabGroups.query({ windowId });
+    return new Map(groups.map((group) => [group.id, group]));
+  } catch {
+    return new Map();
+  }
 }
 
 function safeFaviconUrl(pageUrl, faviconUrl) {
@@ -254,7 +270,7 @@ async function sendToTab(tabId, message, injectIfMissing = true) {
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
-      files: ["content.js"]
+      files: ["grouping.js", "content.js"]
     });
     await chrome.tabs.sendMessage(tabId, message);
     return true;
