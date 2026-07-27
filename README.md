@@ -93,6 +93,8 @@ The third step is essential: a normal hotkey-only tool can trigger Copy Link and
 
 Archeo tracks tab activation order per Chrome window. On the first `Control+Tab`, it keeps the current page active and highlights the previously used tab. `Control+Shift+Tab` moves in the opposite direction; on the first iteration it wraps to the least-recent tab. Further Tab or Shift+Tab presses only move the highlight; the switch happens when Control is released.
 
+New tabs are recorded immediately, including background tabs opened with a middle-click or links that target a new tab. The next `Control+Tab` selects that newly created tab without requiring it to be visited first.
+
 The overlay shows up to five tabs with locally generated page previews. Chrome does not allow extension UI on protected pages such as `chrome://settings` or the Chrome Web Store, but tab switching still works there.
 
 ## Privacy and permissions

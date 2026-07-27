@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 
 require("../mru.js");
-const { buildMruOrder, moveMruIndex } = globalThis.ArcheoMru;
+const { buildMruOrder, moveMruIndex, rememberTab } = globalThis.ArcheoMru;
 
 const tabs = [
   { id: 10, lastAccessed: 100 },
@@ -31,5 +31,21 @@ assert.equal(moveMruIndex(0, 4, 1), 1, "moves forward from the active tab");
 assert.equal(moveMruIndex(0, 4, -1), 3, "first backward move selects least recent");
 assert.equal(moveMruIndex(3, 4, 1), 0, "wraps forward to the active tab");
 assert.equal(moveMruIndex(2, 4, -1), 1, "continues backward through the list");
+
+assert.deepEqual(
+  rememberTab(40, [20, 30, 10]),
+  [40, 20, 30, 10],
+  "records a newly created background tab as the newest candidate"
+);
+
+assert.deepEqual(
+  buildMruOrder(
+    20,
+    [...tabs, { id: 40, lastAccessed: 0 }],
+    rememberTab(40, [20, 30, 10])
+  ),
+  [20, 40, 30, 10],
+  "places a newly created background tab directly after the active tab"
+);
 
 console.log("MRU ordering tests passed");
