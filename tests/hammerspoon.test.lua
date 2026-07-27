@@ -87,6 +87,19 @@ end
 dofile(adapterPath)
 assert(eventCallback, "adapter did not create an event tap")
 
+assert(eventCallback(keyboardEvent(eventTypes.keyDown, 48, {
+  ctrl = true,
+  shift = true,
+})) == true)
+assert(#postedEvents == 2 and postedEvents[1].key == "u")
+assert(eventCallback(keyboardEvent(eventTypes.keyUp, 48, {
+  ctrl = true,
+  shift = true,
+})) == true)
+assert(eventCallback(keyboardEvent(eventTypes.flagsChanged, 0, {})) == false)
+assert(#postedEvents == 4 and postedEvents[3].key == ",")
+
+postedEvents = {}
 assert(eventCallback(keyboardEvent(eventTypes.keyDown, 48, { ctrl = true })) == true)
 assert(#postedEvents == 2 and postedEvents[1].key == ".")
 assert(eventCallback(keyboardEvent(eventTypes.keyUp, 48, { ctrl = true })) == true)

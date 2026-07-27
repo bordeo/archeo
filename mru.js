@@ -15,5 +15,11 @@
     ])];
   }
 
-  global.ArcheoMru = { buildMruOrder };
+  function moveMruIndex(index, length, direction) {
+    if (length <= 0) return 0;
+    const step = direction < 0 ? -1 : 1;
+    return (index + step + length) % length;
+  }
+
+  global.ArcheoMru = { buildMruOrder, moveMruIndex };
 })(globalThis);

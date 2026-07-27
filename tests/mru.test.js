@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 
 require("../mru.js");
-const { buildMruOrder } = globalThis.ArcheoMru;
+const { buildMruOrder, moveMruIndex } = globalThis.ArcheoMru;
 
 const tabs = [
   { id: 10, lastAccessed: 100 },
@@ -26,5 +26,10 @@ assert.deepEqual(
   [30, 20, 10],
   "deduplicates remembered tabs"
 );
+
+assert.equal(moveMruIndex(0, 4, 1), 1, "moves forward from the active tab");
+assert.equal(moveMruIndex(0, 4, -1), 3, "first backward move selects least recent");
+assert.equal(moveMruIndex(3, 4, 1), 0, "wraps forward to the active tab");
+assert.equal(moveMruIndex(2, 4, -1), 1, "continues backward through the list");
 
 console.log("MRU ordering tests passed");

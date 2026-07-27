@@ -1,6 +1,6 @@
 importScripts("mru.js");
 
-const { buildMruOrder } = globalThis.ArcheoMru;
+const { buildMruOrder, moveMruIndex } = globalThis.ArcheoMru;
 const COPY_DOCUMENT_PATH = "offscreen.html";
 const SWITCH_FAILSAFE_MS = 15000;
 const SWITCHER_LIMIT = 5;
@@ -130,7 +130,7 @@ function scheduleThumbnailCapture(tabId, windowId, delay = 450) {
   captureTimers.set(windowId, timer);
 }
 
-async function switchToRecentTab({ commitImmediately = false } = {}) {
+async function switchToRecentTab({ commitImmediately = false, direction = 1 } = {}) {
   await loadState();
 
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -164,7 +164,11 @@ async function switchToRecentTab({ commitImmediately = false } = {}) {
     return;
   }
 
-  switchSession.index = (switchSession.index + 1) % switchSession.order.length;
+  switchSession.index = moveMruIndex(
+    switchSession.index,
+    switchSession.order.length,
+    direction
+  );
   const targetId = switchSession.order[switchSession.index];
   const tabs = await chrome.tabs.query({ windowId: switchSession.windowId });
   const tabsById = new Map(tabs.map((tab) => [tab.id, tab]));
@@ -270,6 +274,9 @@ async function runCommand(command, options = {}) {
   try {
     if (command === "copy-link") await copyCurrentLink();
     if (command === "switch-recent-tab") await switchToRecentTab(options);
+    if (command === "switch-recent-tab-backward") {
+      await switchToRecentTab({ ...options, direction: -1 });
+    }
     if (command === "commit-recent-tab") {
       await commitRecentTab(switchSession?.sourceTabId);
     }
