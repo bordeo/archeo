@@ -21,5 +21,9 @@
     return (index + step + length) % length;
   }
 
-  global.ArcheoMru = { buildMruOrder, moveMruIndex };
+  function rememberTab(tabId, rememberedIds) {
+    return [tabId, ...rememberedIds.filter((id) => id !== tabId)];
+  }
+
+  global.ArcheoMru = { buildMruOrder, moveMruIndex, rememberTab };
 })(globalThis);

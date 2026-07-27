@@ -1,6 +1,6 @@
 importScripts("mru.js");
 
-const { buildMruOrder, moveMruIndex } = globalThis.ArcheoMru;
+const { buildMruOrder, moveMruIndex, rememberTab } = globalThis.ArcheoMru;
 const COPY_DOCUMENT_PATH = "offscreen.html";
 const SWITCH_FAILSAFE_MS = 15000;
 const SWITCHER_LIMIT = 5;
@@ -34,7 +34,7 @@ function saveState() {
 function touchTab(windowId, tabId) {
   const key = String(windowId);
   const order = mruByWindow[key] || [];
-  mruByWindow[key] = [tabId, ...order.filter((id) => id !== tabId)];
+  mruByWindow[key] = rememberTab(tabId, order);
   return saveState();
 }
 
@@ -329,6 +329,12 @@ chrome.tabs.onActivated.addListener(async ({ tabId, windowId }) => {
   await touchTab(windowId, tabId);
   void sendToTab(tabId, { type: "ARCHEO_PING" });
   scheduleThumbnailCapture(tabId, windowId);
+});
+
+chrome.tabs.onCreated.addListener(async (tab) => {
+  if (tab.id == null || tab.windowId == null) return;
+  await loadState();
+  await touchTab(tab.windowId, tab.id);
 });
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
