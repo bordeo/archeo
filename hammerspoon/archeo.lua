@@ -72,6 +72,12 @@ local archeoEventTap = hs.eventtap.new({
     return false
   end
 
+  if keyCode == keyCodes.tab and hasOnly(flags, { ctrl = true, shift = true }) then
+    switching = true
+    sendShortcut({ "ctrl", "shift" }, "u")
+    return true
+  end
+
   if keyCode == keyCodes.tab and hasOnly(flags, { ctrl = true }) then
     switching = true
     sendShortcut({ "ctrl", "shift" }, ".")

@@ -3,7 +3,7 @@
 Archeo brings a couple of Arc-inspired interactions to Google Chrome:
 
 - **Copy Link** copies the active page URL and shows a compact confirmation pill.
-- **Recent Tabs** opens a visual most-recently-used tab switcher. Keep holding Control and tap Tab to move the highlight; release Control to switch, or press Escape to cancel.
+- **Recent Tabs** opens a visual most-recently-used tab switcher. Keep holding Control and tap Tab to move forward or Shift+Tab to move backward; release Control to switch, or press Escape to cancel.
 
 Archeo is a Manifest V3 extension with no build step, external dependencies, analytics, or network services.
 
@@ -16,6 +16,7 @@ Archeo is a Manifest V3 extension with no build step, external dependencies, ana
 5. Open `chrome://extensions/shortcuts` and confirm the internal shortcuts:
    - Copy Link: `Shift+Command+X`
    - Recent Tabs: `Control+Shift+.`
+   - Recent Tabs Backward: `Control+Shift+U`
    - Finish Recent Tabs: `Control+Shift+,`
 
 Chrome reserves `Shift+Command+C` for DevTools and `Control+Tab` for native tab navigation. Extensions cannot override those shortcuts directly, so macOS users can install one of the included remapping adapters to get the intended gestures.
@@ -36,6 +37,7 @@ The Chrome-only complex modification is included at [`karabiner/archeo.json`](./
 
 - `Shift+Command+C` → Archeo Copy Link
 - `Control+Tab` → Archeo Recent Tabs
+- `Control+Shift+Tab` → Archeo Recent Tabs backward
 - `Command+Option+C` → Chrome's original element inspector
 
 Copy the configuration into Karabiner-Elements:
@@ -78,17 +80,18 @@ The Hammerspoon adapter provides the same Chrome-only mappings and observes Cont
 
 ### Bring your own remapper
 
-Other tools can integrate with Archeo without an extension-specific API. Scope the mappings to Chrome and implement this three-command contract:
+Other tools can integrate with Archeo without an extension-specific API. Scope the mappings to Chrome and implement this four-command contract:
 
 1. `Shift+Command+C` sends `Shift+Command+X` for **Copy Link**.
 2. Every `Control+Tab` key-down sends `Control+Shift+.` for **Recent Tabs**.
-3. After at least one cycle command, releasing Control sends `Control+Shift+,` once to **Finish Recent Tabs**.
+3. Every `Control+Shift+Tab` key-down sends `Control+Shift+U` for **Recent Tabs Backward**.
+4. After at least one cycle command, releasing Control sends `Control+Shift+,` once to **Finish Recent Tabs**.
 
 The third step is essential: a normal hotkey-only tool can trigger Copy Link and cycle the selection, but it cannot reliably finish the held-key interaction. BetterTouchTool exposes a key-release action category and is a good candidate for a future preset; contributions for tested adapters are welcome.
 
 ## How Recent Tabs works
 
-Archeo tracks tab activation order per Chrome window. On the first `Control+Tab`, it keeps the current page active and highlights the previously used tab. Further Tab presses only move the highlight; the switch happens when Control is released.
+Archeo tracks tab activation order per Chrome window. On the first `Control+Tab`, it keeps the current page active and highlights the previously used tab. `Control+Shift+Tab` moves in the opposite direction; on the first iteration it wraps to the least-recent tab. Further Tab or Shift+Tab presses only move the highlight; the switch happens when Control is released.
 
 The overlay shows up to five tabs with locally generated page previews. Chrome does not allow extension UI on protected pages such as `chrome://settings` or the Chrome Web Store, but tab switching still works there.
 

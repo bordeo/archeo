@@ -121,6 +121,39 @@
         },
         {
           "type": "basic",
+          "description": "Control-Shift-Tab cycles backward through recent Chrome tabs with Archeo",
+          "from": {
+            "key_code": "tab",
+            "modifiers": {
+              "mandatory": ["control", "shift"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 1
+              }
+            },
+            {
+              "key_code": "u",
+              "modifiers": ["left_control", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
           "description": "Control-Tab cycles through most-recent Chrome tabs with Archeo",
           "from": {
             "key_code": "tab",
