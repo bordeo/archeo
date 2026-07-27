@@ -1,6 +1,7 @@
-importScripts("mru.js");
+importScripts("mru.js", "action-queue.js");
 
 const { buildMruOrder, moveMruIndex, rememberTab } = globalThis.ArcheoMru;
+const { createActionQueue } = globalThis.ArcheoActionQueue;
 const COPY_DOCUMENT_PATH = "offscreen.html";
 const SWITCH_FAILSAFE_MS = 15000;
 const SWITCHER_LIMIT = 5;
@@ -13,6 +14,7 @@ let switchFailsafeTimer;
 let lastCopyAt = 0;
 const ignoredActivations = new Set();
 const captureTimers = new Map();
+const enqueueSwitchAction = createActionQueue();
 
 function loadState() {
   if (!loadStatePromise) {
@@ -143,19 +145,25 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
 
   if (!sameSession) {
     clearTimeout(switchFailsafeTimer);
-    await captureThumbnail(activeTab.id, activeTab.windowId);
-    const tabs = await chrome.tabs.query({ windowId: activeTab.windowId });
+    const [tabs, groupsById] = await Promise.all([
+      chrome.tabs.query({ windowId: activeTab.windowId }),
+      getGroupsById(activeTab.windowId)
+    ]);
     const order = buildMruOrder(
       activeTab.id,
       tabs,
-      mruByWindow[String(activeTab.windowId)] || []
+      mruByWindow[String(activeTab.windowId)] || [],
+      SWITCHER_LIMIT
     );
+    const tabsById = new Map(tabs.map((tab) => [tab.id, tab]));
 
     switchSession = {
       windowId: activeTab.windowId,
       sourceTabId: activeTab.id,
       order,
-      index: 0
+      index: 0,
+      tabs: order.map((id) => tabsById.get(id)).filter(Boolean),
+      groupsById
     };
   }
 
@@ -170,22 +178,9 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
     direction
   );
   const targetId = switchSession.order[switchSession.index];
-  const tabs = await chrome.tabs.query({ windowId: switchSession.windowId });
-  const groupsById = await getGroupsById(switchSession.windowId);
-  const tabsById = new Map(tabs.map((tab) => [tab.id, tab]));
-  const orderedTabs = switchSession.order
-    .map((id) => tabsById.get(id))
-    .filter(Boolean);
-  const selectedIndex = orderedTabs.findIndex((tab) => tab.id === targetId);
-  const maxStart = Math.max(0, orderedTabs.length - SWITCHER_LIMIT);
-  const start = Math.min(
-    maxStart,
-    Math.max(0, selectedIndex - Math.floor(SWITCHER_LIMIT / 2))
-  );
-  const visibleItems = orderedTabs
-    .slice(start, start + SWITCHER_LIMIT)
+  const visibleItems = switchSession.tabs
     .map((tab) => {
-      const group = groupsById.get(tab.groupId);
+      const group = switchSession.groupsById.get(tab.groupId);
       return {
         id: tab.id,
         title: tab.title || "New tab",
@@ -257,6 +252,16 @@ async function cancelRecentTab(sourceTabId) {
   return true;
 }
 
+async function activateSwitcherTab(sourceTabId, targetTabId) {
+  if (!switchSession || switchSession.sourceTabId !== sourceTabId) return false;
+
+  const targetIndex = switchSession.order.indexOf(targetTabId);
+  if (targetIndex < 0) return false;
+
+  switchSession.index = targetIndex;
+  return commitRecentTab(sourceTabId);
+}
+
 async function sendToTab(tabId, message, injectIfMissing = true) {
   if (!tabId) return false;
 
@@ -302,28 +307,50 @@ async function runCommand(command, options = {}) {
   }
 }
 
-chrome.commands.onCommand.addListener(runCommand);
+function isSwitcherCommand(command) {
+  return command === "switch-recent-tab" ||
+    command === "switch-recent-tab-backward" ||
+    command === "commit-recent-tab";
+}
+
+function runQueuedCommand(command, options = {}) {
+  if (!isSwitcherCommand(command)) return runCommand(command, options);
+  return enqueueSwitchAction(() => runCommand(command, options));
+}
+
+chrome.commands.onCommand.addListener((command) => {
+  void runQueuedCommand(command);
+});
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.target === "offscreen") return false;
 
   if (message?.type === "COMMIT_SWITCHER") {
-    commitRecentTab(_sender.tab?.id)
+    enqueueSwitchAction(() => commitRecentTab(_sender.tab?.id))
       .then((committed) => sendResponse({ ok: committed }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
 
   if (message?.type === "CANCEL_SWITCHER") {
-    cancelRecentTab(_sender.tab?.id)
+    enqueueSwitchAction(() => cancelRecentTab(_sender.tab?.id))
       .then((cancelled) => sendResponse({ ok: cancelled }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message?.type === "ACTIVATE_SWITCHER_TAB") {
+    enqueueSwitchAction(() => activateSwitcherTab(_sender.tab?.id, message.tabId))
+      .then((activated) => sendResponse({ ok: activated }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }
 
   if (message?.type !== "RUN_COMMAND") return false;
 
-  runCommand(message.command, { commitImmediately: Boolean(message.commitImmediately) })
+  runQueuedCommand(message.command, {
+    commitImmediately: Boolean(message.commitImmediately)
+  })
     .then(() => sendResponse({ ok: true }))
     .catch((error) => sendResponse({ ok: false, error: String(error) }));
   return true;

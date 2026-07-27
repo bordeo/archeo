@@ -1,5 +1,5 @@
 (function exposeMru(global) {
-  function buildMruOrder(activeTabId, tabs, rememberedIds) {
+  function buildMruOrder(activeTabId, tabs, rememberedIds, limit = Infinity) {
     const openTabs = tabs.filter((tab) => Number.isInteger(tab.id));
     const openIds = new Set(openTabs.map((tab) => tab.id));
     const remembered = rememberedIds.filter((id) => openIds.has(id));
@@ -12,7 +12,7 @@
       activeTabId,
       ...remembered.filter((id) => id !== activeTabId),
       ...fallback.filter((id) => id !== activeTabId)
-    ])];
+    ])].slice(0, Math.max(0, limit));
   }
 
   function moveMruIndex(index, length, direction) {

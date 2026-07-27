@@ -18,6 +18,7 @@ jobs:
       - name: Check JavaScript syntax
         run: |
           node --check background.js
+          node --check action-queue.js
           node --check content.js
           node --check grouping.js
           node --check key-observer.js
@@ -29,6 +30,7 @@ jobs:
       - name: Run tests
         run: |
           node tests/mru.test.js
+          node tests/action-queue.test.js
           node tests/grouping.test.js
           node tests/key-observer.test.js
       - name: Install Lua

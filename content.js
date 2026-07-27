@@ -6,7 +6,9 @@ const host = document.createElement("div");
 host.id = "archeo-root";
 const root = host.attachShadow({ mode: "closed" });
 let switcherActive = false;
+let switcherRevealTimer;
 const CONTROL_RELEASE_EVENT = "__archeo_control_released__";
+const SWITCHER_REVEAL_DELAY_MS = 300;
 const { groupAdjacentItems } = globalThis.ArcheoGrouping;
 
 const style = document.createElement("style");
@@ -34,7 +36,11 @@ style.textContent = `
     transition: opacity 100ms ease, transform 100ms ease;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
-  .switcher.visible { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  .switcher.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
   .group-cluster {
     --group-color: #9aa0a6;
     position: relative;
@@ -67,6 +73,7 @@ style.textContent = `
     line-height: 16px;
     text-overflow: ellipsis;
     white-space: nowrap;
+    pointer-events: none;
   }
   .group-dot {
     width: 7px;
@@ -92,6 +99,7 @@ style.textContent = `
     border: 2px solid transparent;
     border-radius: 12px;
     background: rgba(255, 255, 255, .055);
+    cursor: pointer;
     transform: translateY(0);
     transition: border-color 120ms ease, background-color 120ms ease,
       transform 140ms cubic-bezier(.2, .8, .2, 1);
@@ -100,6 +108,9 @@ style.textContent = `
     border-color: rgba(255, 255, 255, .9);
     background: rgba(255, 255, 255, .16);
     transform: translateY(-2px);
+  }
+  .tab:hover {
+    background: rgba(255, 255, 255, .12);
   }
   .preview {
     position: relative;
@@ -235,13 +246,14 @@ function mount() {
 }
 
 function hideSwitcher() {
+  clearTimeout(switcherRevealTimer);
+  switcherRevealTimer = undefined;
   switcherActive = false;
   root.querySelector(".switcher")?.classList.remove("visible");
 }
 
 function commitSwitcher() {
-  if (!switcherActive) return;
-  switcherActive = false;
+  hideSwitcher();
   chrome.runtime.sendMessage({ type: "COMMIT_SWITCHER" });
 }
 
@@ -281,10 +293,12 @@ function renderSwitcher(items) {
   }
 
   if (firstAppearance) {
+    clearTimeout(switcherRevealTimer);
     switcher.classList.remove("visible");
-    requestAnimationFrame(() => {
+    switcherRevealTimer = setTimeout(() => {
+      switcherRevealTimer = undefined;
       if (switcherActive) switcher.classList.add("visible");
-    });
+    }, SWITCHER_REVEAL_DELAY_MS);
   }
 }
 
@@ -331,6 +345,28 @@ function createTabCard(item) {
   const card = document.createElement("div");
   card.className = `tab${item.selected ? " selected" : ""}`;
   card.dataset.tabId = String(item.id);
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-label", `Switch to ${item.title || "tab"}`);
+  const activateTab = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!switcherActive) return;
+    switcherActive = false;
+    chrome.runtime.sendMessage({
+      type: "ACTIVATE_SWITCHER_TAB",
+      tabId: item.id
+    });
+  };
+  card.addEventListener("mousedown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.button === 0) activateTab(event);
+  });
+  card.addEventListener("click", activateTab);
+  card.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
 
   const preview = document.createElement("div");
   preview.className = "preview";
@@ -429,7 +465,7 @@ chrome.runtime.onMessage.addListener((message) => {
 });
 
 window.addEventListener("keyup", (event) => {
-  if (switcherActive && (event.key === "Control" || !event.ctrlKey)) {
+  if (event.key === "Control" || (switcherActive && !event.ctrlKey)) {
     commitSwitcher();
   }
 }, true);
@@ -446,6 +482,6 @@ document.addEventListener("keydown", (event) => {
 }, true);
 
 window.addEventListener("blur", () => {
-  commitSwitcher();
+  if (switcherActive) commitSwitcher();
 });
 })();

@@ -27,7 +27,6 @@ Chrome reserves `Shift+Command+C` for DevTools and `Control+Tab` for native tab 
 | --- | --- | --- | --- | --- |
 | Karabiner-Elements | Free, open source | Yes | Yes | [`karabiner/archeo.json`](./karabiner/archeo.json) |
 | Hammerspoon | Free, open source | Yes | Yes | [`hammerspoon/archeo.lua`](./hammerspoon/archeo.lua) |
-| macOS App Shortcuts | Built in | Menu action only | No | Not applicable |
 
 Enable only one Archeo remapping adapter at a time. Running Karabiner-Elements and Hammerspoon mappings together will send every command twice.
 
@@ -74,9 +73,9 @@ The Hammerspoon adapter provides the same Chrome-only mappings and observes Cont
 4. Choose **Reload Config** from the Hammerspoon menu.
 5. Disable Archeo's Karabiner-Elements rule if it is enabled.
 
-### Built-in macOS options
+### Why built-in macOS shortcuts are not enough
 
-**System Settings → Keyboard → Keyboard Shortcuts → App Shortcuts** can assign a shortcut to a named Chrome menu command such as **Copy Link**. It is useful for menu actions, but macOS App Shortcuts and the Shortcuts app do not expose the held-key state and modifier-release lifecycle required by Archeo's MRU selector. Use Karabiner-Elements or Hammerspoon for the complete experience.
+**System Settings → Keyboard → Keyboard Shortcuts → App Shortcuts** can only assign shortcuts to commands exposed in an application's native menu bar. Chrome's **Copy Link** action lives in the three-dot popover rather than the macOS menu bar, so App Shortcuts cannot target it. The Shortcuts app also does not expose the held-key state and modifier-release lifecycle required by Archeo's MRU selector. Use Karabiner-Elements or Hammerspoon for the complete experience.
 
 ### Bring your own remapper
 
@@ -91,11 +90,11 @@ The fourth step is essential: a normal hotkey-only tool can trigger Copy Link an
 
 ## How Recent Tabs works
 
-Archeo tracks tab activation order per Chrome window. On the first `Control+Tab`, it keeps the current page active and highlights the previously used tab. `Control+Shift+Tab` moves in the opposite direction; on the first iteration it wraps to the least-recent tab. Further Tab or Shift+Tab presses only move the highlight; the switch happens when Control is released.
+Archeo tracks tab activation order per Chrome window. A quick `Control+Tab` switches to the previous tab without flashing the rail; keep holding Control for 300 ms to reveal it. `Control+Shift+Tab` moves in the opposite direction; on the first iteration it wraps to the least-recent tab. Further Tab or Shift+Tab presses only move the highlight; the switch happens when Control is released. While the rail is open, clicking a card switches to that tab immediately and closes the rail.
 
 New tabs are recorded immediately, including background tabs opened with a middle-click or links that target a new tab. The next `Control+Tab` selects that newly created tab without requiring it to be visited first.
 
-The overlay shows up to five tabs with locally generated page previews. Chrome does not allow extension UI on protected pages such as `chrome://settings` or the Chrome Web Store, but tab switching still works there.
+The overlay and its cycling history are intentionally limited to five tabs: the current tab and its four most-recent candidates. The cards use locally generated page previews. Chrome does not allow extension UI on protected pages such as `chrome://settings` or the Chrome Web Store, but tab switching still works there.
 
 ## Privacy and permissions
 
@@ -118,6 +117,7 @@ Run the checks with Node.js:
 
 ```sh
 node --check background.js
+node --check action-queue.js
 node --check content.js
 node --check grouping.js
 node --check key-observer.js
@@ -125,6 +125,7 @@ node --check mru.js
 node --check offscreen.js
 node --check popup.js
 node tests/mru.test.js
+node tests/action-queue.test.js
 node tests/grouping.test.js
 node tests/key-observer.test.js
 lua tests/hammerspoon.test.lua hammerspoon/archeo.lua

@@ -48,4 +48,23 @@ assert.deepEqual(
   "places a newly created background tab directly after the active tab"
 );
 
+assert.deepEqual(
+  buildMruOrder(
+    10,
+    [
+      { id: 10 },
+      { id: 20 },
+      { id: 30 },
+      { id: 40 },
+      { id: 50 },
+      { id: 60 },
+      { id: 70 }
+    ],
+    [10, 20, 30, 40, 50, 60, 70],
+    5
+  ),
+  [10, 20, 30, 40, 50],
+  "limits cycling to the five most-recent tabs"
+);
+
 console.log("MRU ordering tests passed");
