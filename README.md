@@ -5,8 +5,6 @@ Archeo brings a couple of Arc-inspired interactions to Google Chrome:
 - **Copy Link** copies the active page URL and shows a compact confirmation pill.
 - **Recent Tabs** opens a visual most-recently-used tab switcher. Keep holding Control and tap Tab to move the highlight; release Control to switch, or press Escape to cancel.
 
-[Watch the demo](./archeo-demo.mp4)
-
 Archeo is a Manifest V3 extension with no build step, external dependencies, analytics, or network services.
 
 ## Install the extension
