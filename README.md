@@ -87,7 +87,7 @@ Other tools can integrate with Archeo without an extension-specific API. Scope t
 3. Every `Control+Shift+Tab` key-down sends `Control+Shift+U` for **Recent Tabs Backward**.
 4. Releasing Control sends `Control+Shift+,` once to **Finish Recent Tabs**. The command is harmless when no selector is active.
 
-The third step is essential: a normal hotkey-only tool can trigger Copy Link and cycle the selection, but it cannot reliably finish the held-key interaction. BetterTouchTool exposes a key-release action category and is a good candidate for a future preset; contributions for tested adapters are welcome.
+The fourth step is essential: a normal hotkey-only tool can trigger Copy Link and cycle the selection, but it cannot reliably finish the held-key interaction. BetterTouchTool exposes a key-release action category and is a good candidate for a future preset; contributions for tested adapters are welcome.
 
 ## How Recent Tabs works
 
@@ -107,6 +107,7 @@ The extension requests:
 - `activeTab` and `<all_urls>` to capture local previews and render the overlay on normal web pages.
 - `scripting` to restore the overlay after an unpacked-extension reload.
 - `storage` for session-only MRU state and previews.
+- `tabGroups` to display the name and color of each Chrome tab group.
 - `clipboardWrite` and `offscreen` to copy the current URL reliably.
 
 ## Development
@@ -118,10 +119,15 @@ Run the checks with Node.js:
 ```sh
 node --check background.js
 node --check content.js
+node --check grouping.js
+node --check key-observer.js
 node --check mru.js
 node --check offscreen.js
 node --check popup.js
 node tests/mru.test.js
+node tests/grouping.test.js
+node tests/key-observer.test.js
+lua tests/hammerspoon.test.lua hammerspoon/archeo.lua
 ```
 
 Contributions and bug reports are welcome. Please keep changes focused and include a test when modifying MRU ordering behavior.
