@@ -4,6 +4,7 @@ globalThis.__archeoContentLoaded = true;
 
 const host = document.createElement("div");
 host.id = "archeo-root";
+host.setAttribute("popover", "manual");
 const root = host.attachShadow({ mode: "closed" });
 let switcherActive = false;
 let switcherRevealTimer;
@@ -276,8 +277,35 @@ style.textContent = `
 `;
 root.append(style);
 
+function pinHostAbovePage() {
+  const importantStyles = {
+    position: "fixed",
+    inset: "0",
+    display: "block",
+    "z-index": "2147483647",
+    "pointer-events": "none",
+    margin: "0",
+    padding: "0",
+    border: "0",
+    width: "auto",
+    height: "auto",
+    overflow: "visible",
+    background: "transparent"
+  };
+
+  for (const [property, value] of Object.entries(importantStyles)) {
+    host.style.setProperty(property, value, "important");
+  }
+}
+
 function mount() {
-  if (!host.isConnected) (document.documentElement || document).append(host);
+  pinHostAbovePage();
+
+  // Promote the host after any page-owned dialog/popover in the browser's top
+  // layer. Re-appending also wins DOM order when Popover API is unavailable.
+  if (host.matches(":popover-open")) host.hidePopover();
+  (document.documentElement || document).append(host);
+  host.showPopover?.();
 }
 
 function hideSwitcher() {
