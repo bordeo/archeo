@@ -65,7 +65,11 @@ local archeoEventTap = hs.eventtap.new({
   local flags = event:getFlags()
 
   if eventType == eventTypes.keyUp then
-    return switching and keyCode == keyCodes.tab
+    return switching and (
+      keyCode == keyCodes.tab or
+      keyCode == keyCodes.left or
+      keyCode == keyCodes.right
+    )
   end
 
   if not chromeIsFrontmost() then
@@ -80,6 +84,16 @@ local archeoEventTap = hs.eventtap.new({
 
   if keyCode == keyCodes.tab and hasOnly(flags, { ctrl = true }) then
     switching = true
+    sendShortcut({ "ctrl", "shift" }, ".")
+    return true
+  end
+
+  if switching and keyCode == keyCodes.left and hasOnly(flags, { ctrl = true }) then
+    sendShortcut({ "ctrl", "shift" }, "u")
+    return true
+  end
+
+  if switching and keyCode == keyCodes.right and hasOnly(flags, { ctrl = true }) then
     sendShortcut({ "ctrl", "shift" }, ".")
     return true
   end

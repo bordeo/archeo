@@ -1,7 +1,12 @@
 const assert = require("node:assert/strict");
 
 require("../mru.js");
-const { buildMruOrder, moveMruIndex, rememberTab } = globalThis.ArcheoMru;
+const {
+  buildMruOrder,
+  buildSwitcherEntries,
+  moveMruIndex,
+  rememberTab
+} = globalThis.ArcheoMru;
 
 const tabs = [
   { id: 10, lastAccessed: 100 },
@@ -65,6 +70,58 @@ assert.deepEqual(
   ),
   [10, 20, 30, 40, 50],
   "limits cycling to the five most-recent tabs"
+);
+
+const splitTabs = [
+  { id: 10, splitViewId: -1 },
+  { id: 20, splitViewId: 7 },
+  { id: 30, splitViewId: -1 },
+  { id: 40, splitViewId: 7 }
+];
+const splitEntries = buildSwitcherEntries(
+  10,
+  splitTabs,
+  [10, 20, 30, 40],
+  10
+);
+
+assert.deepEqual(
+  splitEntries.map((entry) => ({
+    targetId: entry.targetId,
+    tabIds: entry.tabs.map((tab) => tab.id)
+  })),
+  [
+    { targetId: 10, tabIds: [10] },
+    { targetId: 20, tabIds: [20, 40] },
+    { targetId: 30, tabIds: [30] }
+  ],
+  "collapses tabs from the same split view into one switcher entry"
+);
+
+assert.deepEqual(
+  buildSwitcherEntries(40, splitTabs, [10, 20, 30, 40], 10)[0].tabs.map((tab) => tab.id),
+  [40, 20],
+  "keeps the active pane as the split card activation target"
+);
+
+const manyTabs = Array.from({ length: 12 }, (_, index) => ({ id: index + 1 }));
+assert.equal(
+  buildSwitcherEntries(1, manyTabs, manyTabs.map((tab) => tab.id), 10).length,
+  10,
+  "limits the rail to ten cards"
+);
+
+const splitBeyondLimit = Array.from({ length: 11 }, (_, index) => ({
+  id: index + 1,
+  splitViewId: index === 1 || index === 10 ? 9 : -1
+}));
+assert.deepEqual(
+  buildSwitcherEntries(1, splitBeyondLimit, splitBeyondLimit.map((tab) => tab.id), 10)
+    .find((entry) => entry.targetId === 2)
+    .tabs
+    .map((tab) => tab.id),
+  [2, 11],
+  "keeps every pane when a split partner falls beyond the card limit"
 );
 
 console.log("MRU ordering tests passed");

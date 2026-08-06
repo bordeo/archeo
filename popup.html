@@ -20,9 +20,14 @@
         <span><strong>Recent tabs</strong><small>Repeat to move back in history</small></span>
         <kbd data-shortcut="switch-recent-tab">⌃⇧.</kbd>
       </button>
+      <label class="setting" for="switcher-limit">
+        <span><strong>Cards in rail</strong><small>Between 2 and 10 cards</small></span>
+        <input id="switcher-limit" type="number" min="2" max="10" step="1" value="10">
+      </label>
     </main>
     <p class="note">Chrome reserves ⇧⌘C and ⌃Tab. Archeo cannot suppress those browser actions, so it uses the shortcuts shown above.</p>
     <a id="shortcuts" href="#">Open shortcut settings</a>
+    <script src="settings.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

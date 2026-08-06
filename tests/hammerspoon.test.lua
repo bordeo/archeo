@@ -26,6 +26,8 @@ hs = {
   keycodes = {
     map = {
       c = 8,
+      left = 123,
+      right = 124,
       tab = 48,
     },
   },
@@ -104,20 +106,28 @@ assert(eventCallback(keyboardEvent(eventTypes.keyDown, 48, { ctrl = true })) == 
 assert(#postedEvents == 2 and postedEvents[1].key == ".")
 assert(eventCallback(keyboardEvent(eventTypes.keyUp, 48, { ctrl = true })) == true)
 
+assert(eventCallback(keyboardEvent(eventTypes.keyDown, 124, { ctrl = true })) == true)
+assert(#postedEvents == 4 and postedEvents[3].key == ".")
+assert(eventCallback(keyboardEvent(eventTypes.keyUp, 124, { ctrl = true })) == true)
+
+assert(eventCallback(keyboardEvent(eventTypes.keyDown, 123, { ctrl = true })) == true)
+assert(#postedEvents == 6 and postedEvents[5].key == "u")
+assert(eventCallback(keyboardEvent(eventTypes.keyUp, 123, { ctrl = true })) == true)
+
 assert(eventCallback(keyboardEvent(eventTypes.flagsChanged, 0, {})) == false)
-assert(#postedEvents == 4 and postedEvents[3].key == ",")
+assert(#postedEvents == 8 and postedEvents[7].key == ",")
 
 assert(eventCallback(keyboardEvent(eventTypes.keyDown, 8, {
   cmd = true,
   shift = true,
 })) == true)
-assert(#postedEvents == 6 and postedEvents[5].key == "x")
+assert(#postedEvents == 10 and postedEvents[9].key == "x")
 
 assert(eventCallback(keyboardEvent(eventTypes.keyDown, 8, {
   alt = true,
   cmd = true,
 })) == true)
-assert(#postedEvents == 8 and postedEvents[7].key == "c")
+assert(#postedEvents == 12 and postedEvents[11].key == "c")
 
 local sourceMarker = postedEvents[1][eventProperties.eventSourceUserData]
 assert(sourceMarker ~= nil)
@@ -125,9 +135,12 @@ assert(eventCallback(keyboardEvent(eventTypes.keyDown, 8, {
   cmd = true,
   shift = true,
 }, sourceMarker)) == false)
-assert(#postedEvents == 8, "synthetic commands must not be remapped recursively")
+assert(#postedEvents == 12, "synthetic commands must not be remapped recursively")
 
 frontmostBundleID = "com.apple.Safari"
 assert(eventCallback(keyboardEvent(eventTypes.keyDown, 48, { ctrl = true })) == false)
+
+frontmostBundleID = "com.google.Chrome"
+assert(eventCallback(keyboardEvent(eventTypes.keyDown, 124, { ctrl = true })) == false)
 
 print("Hammerspoon adapter tests passed")

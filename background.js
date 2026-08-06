@@ -1,10 +1,10 @@
-importScripts("mru.js", "action-queue.js");
+importScripts("mru.js", "action-queue.js", "settings.js");
 
-const { buildMruOrder, moveMruIndex, rememberTab } = globalThis.ArcheoMru;
+const { buildSwitcherEntries, moveMruIndex, rememberTab } = globalThis.ArcheoMru;
 const { createActionQueue } = globalThis.ArcheoActionQueue;
+const { normalizeSwitcherLimit } = globalThis.ArcheoSettings;
 const COPY_DOCUMENT_PATH = "offscreen.html";
 const SWITCH_FAILSAFE_MS = 15000;
-const SWITCHER_LIMIT = 5;
 
 let mruByWindow = {};
 let thumbnailsByTab = {};
@@ -149,20 +149,21 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
       chrome.tabs.query({ windowId: activeTab.windowId }),
       getGroupsById(activeTab.windowId)
     ]);
-    const order = buildMruOrder(
+    const switcherLimit = await getSwitcherLimit();
+    const entries = buildSwitcherEntries(
       activeTab.id,
       tabs,
       mruByWindow[String(activeTab.windowId)] || [],
-      SWITCHER_LIMIT
+      switcherLimit
     );
-    const tabsById = new Map(tabs.map((tab) => [tab.id, tab]));
+    const order = entries.map((entry) => entry.targetId);
 
     switchSession = {
       windowId: activeTab.windowId,
       sourceTabId: activeTab.id,
       order,
       index: 0,
-      tabs: order.map((id) => tabsById.get(id)).filter(Boolean),
+      entries,
       groupsById
     };
   }
@@ -178,18 +179,26 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
     direction
   );
   const targetId = switchSession.order[switchSession.index];
-  const visibleItems = switchSession.tabs
-    .map((tab) => {
+  const visibleItems = switchSession.entries
+    .map((entry) => {
+      const tab = entry.tabs[0];
       const group = switchSession.groupsById.get(tab.groupId);
+      const splitTabs = entry.tabs.map((splitTab) => ({
+        id: splitTab.id,
+        title: splitTab.title || "New tab",
+        faviconUrl: safeFaviconUrl(splitTab.url, splitTab.favIconUrl),
+        thumbnailUrl: thumbnailsByTab[String(splitTab.id)] || ""
+      }));
       return {
-        id: tab.id,
-        title: tab.title || "New tab",
+        id: entry.targetId,
+        title: splitTabs.map((splitTab) => splitTab.title).join(" · "),
         faviconUrl: safeFaviconUrl(tab.url, tab.favIconUrl),
         thumbnailUrl: thumbnailsByTab[String(tab.id)] || "",
-        selected: tab.id === targetId,
+        selected: entry.targetId === targetId,
         groupId: group?.id ?? -1,
         groupTitle: group?.title || "",
-        groupColor: group?.color || "grey"
+        groupColor: group?.color || "grey",
+        splitTabs
       };
     });
 
@@ -207,6 +216,11 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
   switchFailsafeTimer = setTimeout(() => {
     commitRecentTab(switchSession?.sourceTabId).catch(console.error);
   }, SWITCH_FAILSAFE_MS);
+}
+
+async function getSwitcherLimit() {
+  const { switcherLimit } = await chrome.storage.local.get("switcherLimit");
+  return normalizeSwitcherLimit(switcherLimit);
 }
 
 async function getGroupsById(windowId) {
@@ -260,6 +274,12 @@ async function activateSwitcherTab(sourceTabId, targetTabId) {
 
   switchSession.index = targetIndex;
   return commitRecentTab(sourceTabId);
+}
+
+async function moveSwitcherSelection(sourceTabId, direction) {
+  if (!switchSession || switchSession.sourceTabId !== sourceTabId) return false;
+  await switchToRecentTab({ direction });
+  return true;
 }
 
 async function sendToTab(tabId, message, injectIfMissing = true) {
@@ -342,6 +362,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "ACTIVATE_SWITCHER_TAB") {
     enqueueSwitchAction(() => activateSwitcherTab(_sender.tab?.id, message.tabId))
       .then((activated) => sendResponse({ ok: activated }))
+      .catch((error) => sendResponse({ ok: false, error: String(error) }));
+    return true;
+  }
+
+  if (message?.type === "MOVE_SWITCHER_SELECTION") {
+    const direction = message.direction < 0 ? -1 : 1;
+    enqueueSwitchAction(() => moveSwitcherSelection(_sender.tab?.id, direction))
+      .then((moved) => sendResponse({ ok: moved }))
       .catch((error) => sendResponse({ ok: false, error: String(error) }));
     return true;
   }

@@ -14,6 +14,19 @@ document.querySelector("#shortcuts").addEventListener("click", (event) => {
   chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
 });
 
+const switcherLimitInput = document.querySelector("#switcher-limit");
+const { normalizeSwitcherLimit } = globalThis.ArcheoSettings;
+
+chrome.storage.local.get("switcherLimit").then(({ switcherLimit }) => {
+  switcherLimitInput.value = String(normalizeSwitcherLimit(switcherLimit));
+});
+
+switcherLimitInput.addEventListener("change", async () => {
+  const switcherLimit = normalizeSwitcherLimit(switcherLimitInput.value);
+  switcherLimitInput.value = String(switcherLimit);
+  await chrome.storage.local.set({ switcherLimit });
+});
+
 chrome.commands.getAll().then((commands) => {
   for (const command of commands) {
     const label = document.querySelector(`[data-shortcut="${command.name}"]`);

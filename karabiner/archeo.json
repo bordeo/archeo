@@ -49,6 +49,12 @@
             {
               "key_code": "comma",
               "modifiers": ["left_control", "left_shift"]
+            },
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 0
+              }
             }
           ],
           "conditions": [
@@ -80,6 +86,12 @@
             {
               "key_code": "comma",
               "modifiers": ["left_control", "left_shift"]
+            },
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 0
+              }
             }
           ],
           "conditions": [
@@ -104,6 +116,12 @@
             }
           },
           "to": [
+            {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 1
+              }
+            },
             {
               "key_code": "u",
               "modifiers": ["left_control", "left_shift"]
@@ -132,11 +150,145 @@
           },
           "to": [
             {
+              "set_variable": {
+                "name": "archeo_switching",
+                "value": 1
+              }
+            },
+            {
               "key_code": "period",
               "modifiers": ["left_control", "left_shift"]
             }
           ],
           "conditions": [
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Control-Fn-J moves left when an Fn-J arrow layer is installed",
+          "from": {
+            "key_code": "j",
+            "modifiers": {
+              "mandatory": ["control", "fn"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "u",
+              "modifiers": ["left_control", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "variable_if",
+              "name": "archeo_switching",
+              "value": 1
+            },
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Control-Fn-L moves right when an Fn-L arrow layer is installed",
+          "from": {
+            "key_code": "l",
+            "modifiers": {
+              "mandatory": ["control", "fn"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "period",
+              "modifiers": ["left_control", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "variable_if",
+              "name": "archeo_switching",
+              "value": 1
+            },
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Control-Left Arrow moves left in an active Archeo tab selection",
+          "from": {
+            "key_code": "left_arrow",
+            "modifiers": {
+              "mandatory": ["control"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "u",
+              "modifiers": ["left_control", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "variable_if",
+              "name": "archeo_switching",
+              "value": 1
+            },
+            {
+              "type": "frontmost_application_if",
+              "bundle_identifiers": [
+                "^com\\.google\\.Chrome$",
+                "^com\\.google\\.Chrome\\.(beta|dev|canary)$",
+                "^org\\.chromium\\.Chromium$"
+              ]
+            }
+          ]
+        },
+        {
+          "type": "basic",
+          "description": "Control-Right Arrow moves right in an active Archeo tab selection",
+          "from": {
+            "key_code": "right_arrow",
+            "modifiers": {
+              "mandatory": ["control"],
+              "optional": ["caps_lock"]
+            }
+          },
+          "to": [
+            {
+              "key_code": "period",
+              "modifiers": ["left_control", "left_shift"]
+            }
+          ],
+          "conditions": [
+            {
+              "type": "variable_if",
+              "name": "archeo_switching",
+              "value": 1
+            },
             {
               "type": "frontmost_application_if",
               "bundle_identifiers": [

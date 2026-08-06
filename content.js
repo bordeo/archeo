@@ -15,14 +15,18 @@ const style = document.createElement("style");
 style.textContent = `
   :host { all: initial; }
   .switcher {
+    --card-size: 170px;
+    --card-gap: 8px;
+    box-sizing: border-box;
     position: fixed;
     z-index: 2147483647;
     left: 50%;
     bottom: 10vh;
     transform: translateX(-50%) translateY(12px) scale(.98);
     display: flex;
-    gap: 8px;
-    max-width: min(1100px, calc(100vw - 36px));
+    gap: var(--card-gap);
+    width: max-content;
+    max-width: min(1794px, calc(100vw - 36px));
     padding: 10px;
     overflow: hidden;
     color: #f6f4f0;
@@ -45,7 +49,7 @@ style.textContent = `
     --group-color: #9aa0a6;
     position: relative;
     display: flex;
-    gap: 8px;
+    gap: var(--card-gap);
     min-width: 0;
     border-radius: 12px;
     outline: 1px solid color-mix(in srgb, var(--group-color) 68%, transparent);
@@ -91,10 +95,11 @@ style.textContent = `
     display: grid;
     grid-template-rows: minmax(0, 1fr) 24px;
     gap: 8px;
-    flex: 1 1 188px;
-    width: 188px;
+    flex: 1 1 var(--card-size);
+    width: var(--card-size);
     min-width: 0;
-    height: 154px;
+    height: auto;
+    aspect-ratio: 1;
     padding: 8px;
     border: 2px solid transparent;
     border-radius: 12px;
@@ -128,6 +133,22 @@ style.textContent = `
     height: 100%;
     object-fit: cover;
     object-position: top center;
+  }
+  .split-preview {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2px;
+    background: rgba(255, 255, 255, .12);
+  }
+  .split-pane {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .split-pane > * {
+    width: 100%;
+    height: 100%;
   }
   .preview-fallback {
     display: grid;
@@ -181,6 +202,20 @@ style.textContent = `
     object-fit: contain;
     border-radius: 5px;
     background: rgba(255, 255, 255, .08);
+  }
+  .split-favicons {
+    position: relative;
+    width: 20px;
+    height: 20px;
+  }
+  .split-favicons > :nth-child(2) {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    width: 13px;
+    height: 13px;
+    border: 2px solid #373533;
+    border-radius: 5px;
   }
   .fallback {
     display: grid;
@@ -276,7 +311,8 @@ function renderSwitcher(items) {
     item.id,
     item.groupId,
     item.groupTitle,
-    item.groupColor
+    item.groupColor,
+    item.splitTabs?.map((tab) => tab.id)
   ]));
   const sameCards =
     switcher.dataset.layoutSignature === layoutSignature &&
@@ -314,6 +350,9 @@ const GROUP_COLORS = {
   orange: "#e99050"
 };
 
+const CARD_SIZE_PX = 170;
+const CARD_GAP_PX = 8;
+
 function createSegment(segment) {
   if (segment.groupId === null) return createTabCard(segment.items[0]);
 
@@ -324,8 +363,8 @@ function createSegment(segment) {
     GROUP_COLORS[segment.groupColor] || GROUP_COLORS.grey
   );
   cluster.style.flexGrow = String(segment.items.length);
-  cluster.style.flexBasis = `calc(${segment.items.length} * 188px + ${
-    Math.max(0, segment.items.length - 1) * 8
+  cluster.style.flexBasis = `calc(${segment.items.length} * ${CARD_SIZE_PX}px + ${
+    Math.max(0, segment.items.length - 1) * CARD_GAP_PX
   }px)`;
 
   const label = document.createElement("div");
@@ -346,7 +385,11 @@ function createTabCard(item) {
   card.className = `tab${item.selected ? " selected" : ""}`;
   card.dataset.tabId = String(item.id);
   card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `Switch to ${item.title || "tab"}`);
+  const isSplitView = item.splitTabs?.length > 1;
+  card.setAttribute(
+    "aria-label",
+    isSplitView ? `Switch to split view: ${item.title}` : `Switch to ${item.title || "tab"}`
+  );
   const activateTab = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -369,24 +412,29 @@ function createTabCard(item) {
   });
 
   const preview = document.createElement("div");
-  preview.className = "preview";
-  if (item.thumbnailUrl) {
-    const screenshot = document.createElement("img");
-    screenshot.className = "preview-image";
-    screenshot.src = item.thumbnailUrl;
-    screenshot.alt = "";
-    screenshot.addEventListener("error", () => {
-      preview.replaceChildren(makePreviewFallback(item));
-    });
-    preview.append(screenshot);
+  preview.className = `preview${isSplitView ? " split-preview" : ""}`;
+  if (isSplitView) {
+    for (const splitTab of item.splitTabs) {
+      const pane = document.createElement("div");
+      pane.className = "split-pane";
+      pane.append(makePreview(splitTab));
+      preview.append(pane);
+    }
   } else {
-    preview.append(makePreviewFallback(item));
+    preview.append(makePreview(item));
   }
   card.append(preview);
 
   const label = document.createElement("div");
   label.className = "tab-label";
-  label.append(makeFavicon(item));
+  if (isSplitView) {
+    const favicons = document.createElement("div");
+    favicons.className = "split-favicons";
+    favicons.append(...item.splitTabs.slice(0, 2).map(makeFavicon));
+    label.append(favicons);
+  } else {
+    label.append(makeFavicon(item));
+  }
 
   const title = document.createElement("div");
   title.className = "title";
@@ -394,6 +442,19 @@ function createTabCard(item) {
   label.append(title);
   card.append(label);
   return card;
+}
+
+function makePreview(item) {
+  if (!item.thumbnailUrl) return makePreviewFallback(item);
+
+  const screenshot = document.createElement("img");
+  screenshot.className = "preview-image";
+  screenshot.src = item.thumbnailUrl;
+  screenshot.alt = "";
+  screenshot.addEventListener("error", () => {
+    screenshot.replaceWith(makePreviewFallback(item));
+  });
+  return screenshot;
 }
 
 function makeFavicon(item) {
@@ -473,11 +534,23 @@ window.addEventListener("keyup", (event) => {
 window.addEventListener(CONTROL_RELEASE_EVENT, commitSwitcher, true);
 
 document.addEventListener("keydown", (event) => {
-  if (switcherActive && event.key === "Escape") {
+  if (!switcherActive) return;
+
+  if (event.key === "Escape") {
     event.preventDefault();
     event.stopImmediatePropagation();
     switcherActive = false;
     chrome.runtime.sendMessage({ type: "CANCEL_SWITCHER" });
+    return;
+  }
+
+  if (event.ctrlKey && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    chrome.runtime.sendMessage({
+      type: "MOVE_SWITCHER_SELECTION",
+      direction: event.key === "ArrowLeft" ? -1 : 1
+    });
   }
 }, true);
 

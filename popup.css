@@ -23,6 +23,17 @@ button {
   cursor: pointer;
 }
 button:hover { background: white; border-color: #bdb5ac; }
+.setting {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; padding: 11px 12px; color: inherit;
+  background: rgba(255,255,255,.42); border: 1px solid #ddd7cf; border-radius: 11px;
+}
+.setting input {
+  width: 58px; padding: 6px 7px; color: inherit; text-align: center;
+  background: rgba(255,255,255,.72); border: 1px solid #cfc7be; border-radius: 7px;
+  font: 650 14px/1 inherit;
+}
+.setting input:focus { outline: 2px solid #8d7ac9; outline-offset: 1px; }
 strong, small { display: block; }
 small { margin-top: 2px; color: #77716b; }
 kbd { padding: 3px 6px; color: #5e5852; background: #eee9e2; border: 1px solid #d6cfc6; border-radius: 5px; font: 12px/1.2 inherit; white-space: nowrap; }
@@ -34,6 +45,8 @@ a:hover { text-decoration: underline; }
   header p, small, .note { color: #aaa39b; }
   button { background: #302d2a; border-color: #47423e; }
   button:hover { background: #393531; border-color: #5a534d; }
+  .setting { background: #2b2926; border-color: #47423e; }
+  .setting input { background: #211f1d; border-color: #5a534d; }
   kbd { color: #d8d1ca; background: #211f1d; border-color: #4c4641; }
   a { color: #bca8ff; }
 }
