@@ -9,6 +9,7 @@ const SWITCH_FAILSAFE_MS = 15000;
 let mruByWindow = {};
 let thumbnailsByTab = {};
 let loadStatePromise;
+let loadThumbnailStatePromise;
 let switchSession = null;
 let switchFailsafeTimer;
 let lastCopyAt = 0;
@@ -19,14 +20,27 @@ const enqueueSwitchAction = createActionQueue();
 function loadState() {
   if (!loadStatePromise) {
     loadStatePromise = chrome.storage.session
-      .get(["mruByWindow", "thumbnailsByTab"])
-      .then(({ mruByWindow: storedMru, thumbnailsByTab: storedThumbnails }) => {
+      .get("mruByWindow")
+      .then(({ mruByWindow: storedMru }) => {
         mruByWindow = storedMru || {};
-        thumbnailsByTab = storedThumbnails || {};
       });
   }
 
   return loadStatePromise;
+}
+
+function loadThumbnailState() {
+  if (!loadThumbnailStatePromise) {
+    loadThumbnailStatePromise = chrome.storage.session
+      .get("thumbnailsByTab")
+      .then(({ thumbnailsByTab: storedThumbnails }) => {
+        // A capture may finish while session storage is loading. Keep that
+        // fresher in-memory value when merging the stored previews.
+        thumbnailsByTab = { ...(storedThumbnails || {}), ...thumbnailsByTab };
+      });
+  }
+
+  return loadThumbnailStatePromise;
 }
 
 function saveState() {
@@ -41,7 +55,7 @@ function touchTab(windowId, tabId) {
 }
 
 async function removeTab(tabId) {
-  await loadState();
+  await Promise.all([loadState(), loadThumbnailState()]);
 
   for (const key of Object.keys(mruByWindow)) {
     mruByWindow[key] = mruByWindow[key].filter((id) => id !== tabId);
@@ -100,6 +114,7 @@ async function ensureOffscreenDocument() {
 
 async function captureThumbnail(tabId, windowId) {
   try {
+    await loadThumbnailState();
     const tab = await chrome.tabs.get(tabId);
     if (!tab.active || !tab.url?.match(/^https?:\/\//)) return false;
 
@@ -133,10 +148,13 @@ function scheduleThumbnailCapture(tabId, windowId, delay = 450) {
 }
 
 async function switchToRecentTab({ commitImmediately = false, direction = 1 } = {}) {
-  await loadState();
-
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const [, tabs] = await Promise.all([
+    loadState(),
+    chrome.tabs.query({ currentWindow: true })
+  ]);
+  const activeTab = tabs.find((tab) => tab.active);
   if (!activeTab?.id || activeTab.windowId == null) return;
+  const thumbnailsReady = loadThumbnailState();
 
   const sameSession =
     switchSession &&
@@ -145,11 +163,10 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
 
   if (!sameSession) {
     clearTimeout(switchFailsafeTimer);
-    const [tabs, groupsById] = await Promise.all([
-      chrome.tabs.query({ windowId: activeTab.windowId }),
-      getGroupsById(activeTab.windowId)
+    const [groupsById, switcherLimit] = await Promise.all([
+      getGroupsById(activeTab.windowId),
+      getSwitcherLimit()
     ]);
-    const switcherLimit = await getSwitcherLimit();
     const entries = buildSwitcherEntries(
       activeTab.id,
       tabs,
@@ -179,10 +196,42 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
     direction
   );
   const targetId = switchSession.order[switchSession.index];
-  const visibleItems = switchSession.entries
+  const visibleItems = buildVisibleItems(switchSession, targetId);
+
+  const switcherShown = await sendToTab(switchSession.sourceTabId, {
+    type: "ARCHEO_SWITCHER",
+    items: visibleItems
+  });
+
+  if (!switcherShown || commitImmediately) {
+    await commitRecentTab(switchSession.sourceTabId);
+    return;
+  }
+
+  if (!switchSession.thumbnailRefreshScheduled) {
+    const session = switchSession;
+    session.thumbnailRefreshScheduled = true;
+    void thumbnailsReady.then(() => {
+      if (switchSession !== session) return;
+      const selectedId = session.order[session.index];
+      return sendToTab(session.sourceTabId, {
+        type: "ARCHEO_SWITCHER",
+        items: buildVisibleItems(session, selectedId)
+      }, false);
+    });
+  }
+
+  clearTimeout(switchFailsafeTimer);
+  switchFailsafeTimer = setTimeout(() => {
+    commitRecentTab(switchSession?.sourceTabId).catch(console.error);
+  }, SWITCH_FAILSAFE_MS);
+}
+
+function buildVisibleItems(session, targetId) {
+  return session.entries
     .map((entry) => {
       const tab = entry.tabs[0];
-      const group = switchSession.groupsById.get(tab.groupId);
+      const group = session.groupsById.get(tab.groupId);
       const splitTabs = entry.tabs.map((splitTab) => ({
         id: splitTab.id,
         title: splitTab.title || "New tab",
@@ -201,21 +250,6 @@ async function switchToRecentTab({ commitImmediately = false, direction = 1 } = 
         splitTabs
       };
     });
-
-  const switcherShown = await sendToTab(switchSession.sourceTabId, {
-    type: "ARCHEO_SWITCHER",
-    items: visibleItems
-  });
-
-  if (!switcherShown || commitImmediately) {
-    await commitRecentTab(switchSession.sourceTabId);
-    return;
-  }
-
-  clearTimeout(switchFailsafeTimer);
-  switchFailsafeTimer = setTimeout(() => {
-    commitRecentTab(switchSession?.sourceTabId).catch(console.error);
-  }, SWITCH_FAILSAFE_MS);
 }
 
 async function getSwitcherLimit() {

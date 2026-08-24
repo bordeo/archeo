@@ -94,7 +94,7 @@ The fifth step is essential: a normal hotkey-only tool can trigger Copy Link and
 
 ## How Recent Tabs works
 
-Archeo tracks tab activation order per Chrome window. A quick `Control+Tab` switches to the previous tab without flashing the rail; keep holding Control for 300 ms to reveal it. `Control+Shift+Tab` moves in the opposite direction; on the first iteration it wraps to the least-recent tab. While holding Control, use Left/Right Arrow or continue pressing Tab/Shift+Tab to move the highlight. The switch happens when Control is released. Clicking a card switches to that tab immediately and closes the rail. Tabs sharing a Chrome Split View appear together in one card.
+Archeo tracks tab activation order per Chrome window. `Control+Tab` opens the rail immediately with the previous tab selected. `Control+Shift+Tab` moves in the opposite direction; on the first iteration it wraps to the least-recent tab. While holding Control, use Left/Right Arrow or continue pressing Tab/Shift+Tab to move the highlight. The switch happens when Control is released. Clicking a card switches to that tab immediately and closes the rail. Tabs sharing a Chrome Split View appear together in one card.
 
 New tabs are recorded immediately, including background tabs opened with a middle-click or links that target a new tab. The next `Control+Tab` selects that newly created tab without requiring it to be visited first.
 

@@ -7,9 +7,8 @@ host.id = "archeo-root";
 host.setAttribute("popover", "manual");
 const root = host.attachShadow({ mode: "closed" });
 let switcherActive = false;
-let switcherRevealTimer;
+let switcherRevealFrame;
 const CONTROL_RELEASE_EVENT = "__archeo_control_released__";
-const SWITCHER_REVEAL_DELAY_MS = 300;
 const { groupAdjacentItems } = globalThis.ArcheoGrouping;
 
 const style = document.createElement("style");
@@ -23,7 +22,7 @@ style.textContent = `
     z-index: 2147483647;
     left: 50%;
     bottom: 10vh;
-    transform: translateX(-50%) translateY(12px) scale(.98);
+    transform: translate3d(-50%, 8px, 0) scale(.985);
     display: flex;
     gap: var(--card-gap);
     width: max-content;
@@ -37,14 +36,16 @@ style.textContent = `
     box-shadow: 0 18px 60px rgba(0, 0, 0, .42);
     opacity: 0;
     pointer-events: none;
-    backdrop-filter: blur(24px) saturate(130%);
-    transition: opacity 100ms ease, transform 100ms ease;
+    backdrop-filter: blur(16px) saturate(125%);
+    contain: layout paint style;
+    will-change: opacity, transform;
+    transition: opacity 70ms ease-out, transform 90ms cubic-bezier(.2, .8, .2, 1);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   .switcher.visible {
     opacity: 1;
     pointer-events: auto;
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translate3d(-50%, 0, 0) scale(1);
   }
   .group-cluster {
     --group-color: #9aa0a6;
@@ -309,8 +310,8 @@ function mount() {
 }
 
 function hideSwitcher() {
-  clearTimeout(switcherRevealTimer);
-  switcherRevealTimer = undefined;
+  cancelAnimationFrame(switcherRevealFrame);
+  switcherRevealFrame = undefined;
   switcherActive = false;
   root.querySelector(".switcher")?.classList.remove("visible");
 }
@@ -342,8 +343,16 @@ function renderSwitcher(items) {
     item.groupColor,
     item.splitTabs?.map((tab) => tab.id)
   ]));
+  const contentSignature = JSON.stringify(items.map((item) => [
+    item.id,
+    item.title,
+    item.faviconUrl,
+    item.thumbnailUrl,
+    item.splitTabs?.map((tab) => [tab.id, tab.title, tab.faviconUrl, tab.thumbnailUrl])
+  ]));
   const sameCards =
     switcher.dataset.layoutSignature === layoutSignature &&
+    switcher.dataset.contentSignature === contentSignature &&
     currentIds.length === nextIds.length &&
     currentIds.every((id, index) => id === nextIds[index]);
 
@@ -354,15 +363,16 @@ function renderSwitcher(items) {
   } else {
     switcher.replaceChildren(...groupAdjacentItems(items).map(createSegment));
     switcher.dataset.layoutSignature = layoutSignature;
+    switcher.dataset.contentSignature = contentSignature;
   }
 
   if (firstAppearance) {
-    clearTimeout(switcherRevealTimer);
+    cancelAnimationFrame(switcherRevealFrame);
     switcher.classList.remove("visible");
-    switcherRevealTimer = setTimeout(() => {
-      switcherRevealTimer = undefined;
+    switcherRevealFrame = requestAnimationFrame(() => {
+      switcherRevealFrame = undefined;
       if (switcherActive) switcher.classList.add("visible");
-    }, SWITCHER_REVEAL_DELAY_MS);
+    });
   }
 }
 
